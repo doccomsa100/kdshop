@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+	<th:block th:fragment="category">
+	<ul class="nav justify-content-center" id="category_menu">
+	  <li class="nav-item first_category" th:each= "menu : ${firstCategoryList}">
+	    <a class="nav-link active" aria-current="page" href="#" th:data-cate_code="${menu.cate_code}" th:text="${menu.cate_name}" >Active</a>
+	  </li>
+	</ul>
+	<!-- 2차 카테고리가 삽입 -->
+	 <ul class="nav justify-content-center" id="subCategory_menu"></ul>
+	<script>
+		$(document).ready(function() {
+			// 1차 카테고리 클릭 이벤트 설정.  
+			$("ul#category_menu li.first_category").on("click", function() {
+				// console.log("1차 카테고리");
+				let current = $(this); // 1차 카테고리중 선택한 카테고리 li태그
+				let firstCategoryCode = current.find("a.nav-link").data("cate_code");
+
+				$.ajax({
+					url: '/admin/category/secondCategoryList/' + firstCategoryCode,
+					type: 'get',
+					dataType: 'json',
+					success: function(data) {
+						// console.log("2차카테고리", data);
+						// 2차카테고리 추가작업
+						let subCategoryStr = "";
+						for(let i=0; i<data.length; i++) {
+							subCategoryStr += `<li class="nav-item">`;
+							subCategoryStr += `<a class="nav-link active" aria-current="page" href="#" data-subCategoryCode="${data[i].cate_code}">${data[i].cate_name}</a>`;
+							subCategoryStr += `</li>`;
+						}
+
+						// console.log("2차카테고리", subCategoryStr);
+						$("ul#subCategory_menu").empty(); // 기존것 제거.
+						$("ul#subCategory_menu").append(subCategoryStr);
+
+
+					}
+				});
+			});
+
+
+			// 2차카테고리 클릭이벤트 설정
+			$("ul#subCategory_menu").on("click", "li.nav-item a.nav-link", function() {
+				// console.log("2차카테고리 클릭");  data-subcategorycode="5"
+
+				// encodeURIComponent()함수? 특수한 문자를 서버로 보낼때 인코딩작업을 통하여 보내야 한다.
+
+				let cate_code = $(this).data("subcategorycode");
+				let cate_name = encodeURIComponent($(this).html()); // 체크&패턴
+
+				location.href = `/product/pro_list?cate_name=${cate_name}&cate_code=${cate_code}`;
+				
+			});
+		});  // ready end event
+
+
+		
+
+	</script>
+	</th:block>
+
+</html>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kd.basic.admin.category.AdCategoryMapper">
+
+
+	<select id="getFirstCategoryList" resultType="com.kd.basic.common.dto.CategoryDTO">
+	
+		select 
+			cate_code,
+			cate_prtcode, 
+			cate_name,
+			cate_order
+		from 
+			category_tbl 
+		where 
+			cate_prtcode is null
+		order by
+			cate_order asc
+	
+	</select>
+	
+	<select id="getSecondCategoryList" resultType="com.kd.basic.common.dto.CategoryDTO" parameterType="Integer">
+	
+		select 
+			cate_code, 
+			cate_prtcode, 
+			cate_name,
+			cate_order  
+		from 
+			category_tbl 
+		where 
+			cate_prtcode = #{firstCategoryCode}
+		order by
+			cate_order asc
+	
+	</select>
+	
+	<update id="categorySort" parameterType="map">
+		
+		update
+			category_tbl
+		set
+			cate_order = #{order}
+		where
+			cate_code = #{cate_code}
+	
+	
+	</update>
+	
+	<insert id="insertFirstCategory" parameterType="String">
+	    INSERT INTO category_tbl (cate_prtcode, cate_name, cate_order)
+	    VALUES (null, #{cate_name}, 1)
+    </insert>
+    
+    <update id="editFirstCategory" parameterType="com.kd.basic.common.dto.CategoryDTO">
+    
+    	update
+    		category_tbl
+    	set
+    		cate_name = #{cate_name}
+    	where
+			cate_code = #{cate_code}
+    
+    </update>
+    
+    <insert id="addSecondCategory" parameterType="com.kd.basic.common.dto.CategoryDTO">
+    
+    	insert into category_tbl (cate_prtcode, cate_name, cate_order)
+    	values (#{cate_prtcode}, #{cate_name}, 1)
+    
+    </insert>
+    
+    <update id="editSecondCategory" parameterType="com.kd.basic.common.dto.CategoryDTO">
+    	
+    	update 
+    		category_tbl
+    	set
+    		cate_name = #{cate_name},
+    		cate_prtcode = #{cate_prtcode}
+    	where
+			cate_code = #{cate_code}
+    </update>
+    
+    <delete id="deleteCategory" parameterType="Integer">
+    
+    	delete from 
+    		category_tbl    
+    	where
+			cate_code = #{cate_code}
+   
+    </delete>
+    
+     
+</mapper>

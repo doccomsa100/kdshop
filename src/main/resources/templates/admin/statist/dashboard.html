@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{admin/layouts/ad_layout}">
+
+	<th:block layout:fragment="script1">
+	<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+	</th:block>
+
+	<th:block layout:fragment="content">
+	      
+	  <div class="container mt-5">
+		<div class="row">
+			<div class="col">
+				<div class="card card-primary">
+					<div class="card-header">
+					  <h3 class="card-title">매출통계 대시보드</h3>
+					</div>
+					<!-- /.card-header -->
+					<!-- list start -->
+					<div class="card-body">
+						 <div class="row mb-5">
+							<div class="col">
+								<h6>이번달 거래현황</h6>
+
+								<b>거래수</b><p th:text="${monthlyCount}"></p>
+								<b>총매출 금액</b><p th:text="${monthlySalesTotal}"></p>
+							</div>
+							<div class="col">
+								<h6>현재상품현황</h6>
+
+								<b>총상품 수</b><p th:text="${totalProductCount}"></p>
+								<b>품절상품 수</b><p th:text="${soldOutProductCount}"></p>
+							</div>
+						 </div>
+						 <div class="row mt-5">
+							<div class="col">
+								<!-- 이번달 거래 카테고리 통계 -->
+								<b>거래 카테고리 통계</b><br>
+								<canvas id="categoryPieChart" style="width: 250px; height: 250px;"></canvas>
+							</div>
+							<div class="col">
+								<!-- 이번주 거래(주문) 금액 통계 -->
+								<b>이번주 거래금액 통계</b><br>
+								<canvas id="thisWeekOrderAmountChart" style="width:250px; height: 250px"></canvas>
+							</div>
+						 </div>					 					 
+					</div>					
+				 </div>
+			</div>
+		</div>
+	  </div>
+	
+		
+	</th:block>
+
+	<th:block layout:fragment="script2">
+		<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>	
+		<script th:inline="javascript">
+
+			$(document).ready(function() {
+					
+			    categoryChart();
+				thisWeekOrderAmountChart();		
+
+				function categoryChart() {
+					const ctx = document.getElementById('categoryPieChart').getContext('2d');
+
+					let chart;
+
+					if (chart  !== undefined) {
+						chart.destroy();
+					}
+
+					// chart.js파일을 참조하여, chart객체생성.
+					// ctx : <canvas>태그를 2d로 작업하는 객체.
+					chart = new Chart(ctx, {
+						type: 'pie',   // 차트모양
+						data: {		// 차트에 사용될 데이타 작업.  labels(x축 제목), values(y축 데이타)
+							labels: [[${labels1}]],
+							datasets: [{
+								label: "1차카테고리",
+								data: [[${data1}]],
+								backgroundColor:  ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#4B00C0'],
+								borderWidth: 1
+							}]
+						},
+						options: {
+							scales: {
+								y: {
+									beginAtZero: true
+								}
+							}
+						}
+					});
+				}
+
+				function thisWeekOrderAmountChart() {
+					const ctx = document.getElementById('thisWeekOrderAmountChart').getContext('2d');
+
+					let chart;
+
+					if (chart  !== undefined) {
+						chart.destroy();
+					}
+
+					// chart.js파일을 참조하여, chart객체생성.
+					// ctx : <canvas>태그를 2d로 작업하는 객체.
+					chart = new Chart(ctx, {
+						type: 'bar',   // 차트모양
+						data: {		// 차트에 사용될 데이타 작업.  labels(x축 제목), values(y축 데이타)
+							labels: [[${labels2}]],
+							datasets: [{
+								label: "이번주 거래금액",
+								data: [[${data2}]],
+								backgroundColor:  ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#4B00C0'],
+								borderWidth: 1
+							}]
+						},
+						options: {
+							scales: {
+								y: {
+									beginAtZero: true
+								}
+							}
+						}
+					});
+				}
+			});	// end ready event
+	
+		</script>
+
+	</th:block>
+</html>

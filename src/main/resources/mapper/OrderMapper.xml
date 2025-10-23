@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kd.basic.order.OrderMapper">
+
+	<insert id="order_insert" parameterType="com.kd.basic.common.dto.OrderDTO" useGeneratedKeys="true" keyProperty="ord_code">
+	
+		insert into	order_tbl
+		( 
+			mbsp_id,
+			ord_name,
+			ord_addr_zipcode,
+			ord_addr_basic,
+			ord_addr_detail,
+			ord_tel,
+			ord_mail,
+			ord_price
+		)
+		values
+		(
+			#{mbsp_id},
+			#{ord_name},
+			#{ord_addr_zipcode},
+			#{ord_addr_basic},
+			#{ord_addr_detail},
+			#{ord_tel},
+			#{ord_mail},
+			#{ord_price}
+		)
+	</insert>
+	
+	<insert id="order_detail_insert" parameterType="map">
+	
+		insert into ordetail_tbl
+			(
+			ord_code,
+			pro_num,
+			dt_amount,
+			dt_price
+			) 
+		select 
+			#{ord_code}, 
+			c.pro_num,
+			c.cart_amount, 
+			p.pro_price
+		from 
+			cart_tbl c 
+		inner join 
+			product_tbl p
+		on 
+			c.pro_num = p.pro_num
+		where 
+			mbsp_id = #{mbsp_id}
+	
+	</insert>
+
+	<select id="getOrderInfoByOrd_code" resultType="map" parameterType="Integer">
+		select 
+			ot.ord_code, 
+			p.pro_name, 
+			p.pro_up_folder, 
+			p.pro_img, 
+			ot.dt_price, 
+			ot.dt_amount, 
+			pt.payment_status 
+		from 
+			ordetail_tbl ot  
+		inner join 
+			product_tbl p 
+		on 
+			ot.pro_num = p.pro_num
+		inner join 
+			payment_tbl pt
+		on 
+			ot.ord_code = pt.ord_code
+		where 
+			ot.ord_code = #{ord_code}
+	
+	</select>
+	
+	<select id="findOrderById" resultType="com.kd.basic.common.dto.OrderDTO">
+	
+		select
+		 	mbsp_id,
+		 	ord_code,
+			ord_status,
+			ord_regdate
+		from
+			order_tbl
+		where
+			ord_code = #{ord_code}		
+	
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+</mapper>

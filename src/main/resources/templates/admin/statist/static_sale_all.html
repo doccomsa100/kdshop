@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{admin/layouts/ad_layout}">
+
+	<th:block layout:fragment="script1">
+	<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+	</th:block>
+
+	<th:block layout:fragment="content">
+	      
+	  <div class="container mt-5">
+		<div class="row">
+			<div class="col">
+				<div class="card card-primary">
+					<div class="card-header">
+					  <h3 class="card-title">매출통계 대시보드</h3>
+					</div>
+					<!-- /.card-header -->
+					<!-- list start -->
+					<div class="card-body">
+						 <div class="row">
+							<div class="col">
+								<button type="button" value="daily" name="statType" class="btn btn-outline-success">일자별</button>
+								<button type="button" value="hourly" name="statType" class="btn btn-outline-success">시간별</button>
+								<button type="button" value="weekly" name="statType" class="btn btn-outline-success">요일별</button>
+								<button type="button" value="monthly" name="statType" class="btn btn-outline-success">월별</button>
+							</div>
+						 </div>
+						 <div class="row mt-3">
+							<div id="dailyOptions" class="options col" style="display: block;">
+								<input type="month" id="dateInput">
+							</div>
+							
+							<div id="hourlyOptions" class="options col" style="display: none;">
+								<input type="date" id="hourlyStartDate"> ~ <input type="date" id="hourlyEndDate">
+							</div>
+
+							<div id="weeklyOptions" class="options col" style="display: none;">
+								<input type="date" id="weeklyStartDate"> ~ <input type="date" id="weeklyEndDate">
+							</div>
+
+							<div id="monthlyOptions" class="options col" style="display: none;">
+								<input type="text" id="yearpicker" placeholder="년도 선택하세요.">
+							</div>
+							<div class="col-2">
+								<button type="button" class="btn btn-outline-primary" id="search">검색</button>
+						</div>
+
+						 </div>
+						 <div class="row">
+							<div class="col">
+								<canvas id="statsChart" width="400" height="200"></canvas>
+							</div>							
+						 </div>						 
+					</div>
+
+					<div class="card-footer clearfix">
+						
+					</div>
+				 </div>
+			</div>
+		</div>
+	  </div>
+	
+		
+	</th:block>
+
+	<th:block layout:fragment="script2">
+		<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>	
+		<script>
+
+			$(document).ready(function() {
+				
+				// 월별 버튼에서 사용할 달력 환경설정.
+				$("#yearpicker").datepicker({
+					changeYear: true,
+					showButtonPanel: true,
+					dateFormat: 'yy',
+					onClose: function(dateText, inst) { 
+						var year = $("#ui-datepicker-div .ui-datepicker-year :selected").val();
+						$(this).datepicker('setDate', new Date(year, 1));
+					}
+            	});
+
+				$("#yearpicker").focus(function () {
+					$(".ui-datepicker-month").hide();
+					$(".ui-datepicker-calendar").hide();
+				});
+				
+				
+				// <canvas>태그를 2d 작업용으로 객체를 참조.
+				const ctx = document.getElementById('statsChart').getContext('2d');
+
+            	let chart;
+
+				// 초기 통계 유형
+				let type = 'daily';
+
+				// 옵션 영역 표시
+				$(`#${type}Options`).show(); // 일자 버튼 클릭시 보여줄 달력표시
+
+				// ----- 버튼 선택 상태 초기화 -----
+				// 모든 버튼을 비활성화 상태로 초기화
+				$("button[name='statType']").removeClass('btn-success').addClass('btn-outline-success');
+				// daily 버튼만 활성화
+				$("button[name='statType'][value='daily']").removeClass('btn-outline-success').addClass('btn-success');
+
+				// 일자별, 시간별, 요일별, 월별 버튼을 클릭 이벤트 설정.
+				$("button[name='statType']").on("click", function() {
+					console.log("버튼", $(this).val());
+
+					type = $(this).val();  // 4개버튼중 선택한 버튼의 값.
+					$('.options').hide();  // 4개버튼에서 표시되는 달력을 화면에서 숨김.
+
+					$(`#${type}Options`).show(); // 선택한 버튼에 필요한 달력 보이기.
+
+					// 선택된 버튼에 활성화 스타일 적용
+					$("button[name='statType']").removeClass('btn-success').addClass('btn-outline-success'); // 기존 모두 초기화
+					$(this).removeClass('btn-outline-success').addClass('btn-success'); // 클릭한 버튼 활성화
+				});
+				
+
+				// 검색버튼 이벤트 설정.
+				$("#search").on("click", function() {										
+
+					let url = `/admin/statist/${type}`; // 4개으 버튼중 하나를 선택했을 때 스프링에서 요청할 주소.
+					let labelName = "";
+
+					console.log("검색", url);
+                	
+					// 4개의 버튼에 따라서 스프링으로 보내야 할 파라미터 작업.
+					let params = {};
+
+					if (type == 'daily') { // 일자별 버튼 선택시
+						params = {
+							date: $('#dateInput').val()
+							};
+						labelName = $('#dateInput').val();
+					} else if (type == 'hourly') {	// 시간별 버튼 선택시
+						const date = new Date($('#hourlyEndDate').val());
+						date.setDate(date.getDate() + 1);
+						
+						const year = date.getFullYear();
+						const month = String(date.getMonth() + 1).padStart(2, '0');
+						const day = String(date.getDate()).padStart(2, '0');
+
+						//console.log(date.toDateString());
+
+						labelName = $('#hourlyStartDate').val() + " - " + `${year}-${month}-${day - 1}`;
+
+						params = {
+							start_date: $('#hourlyStartDate').val(),
+							end_date: `${year}-${month}-${day}`
+						};
+					} else if (type == 'weekly') {	// 요일별 버튼 선택시
+						const date = new Date($('#weeklyEndDate').val());
+						date.setDate(date.getDate() + 1);
+						
+						const year = date.getFullYear();
+						const month = String(date.getMonth() + 1).padStart(2, '0');
+						const day = String(date.getDate()).padStart(2, '0');
+
+						//console.log(date.toDateString());
+
+						labelName = $('#weeklyStartDate').val() + " - " + `${year}-${month}-${day - 1}`;
+
+						params = {
+							start_date: $('#weeklyStartDate').val(),
+							end_date: `${year}-${month}-${day}`
+						};
+					} else if (type == 'monthly') {	// 월별 버튼 선택시
+						params = { year: $('#yearpicker').val() };
+						labelName = $('#yearpicker').val() + " 년";
+					}
+					
+					//$('.options').hide();
+					//const selectedType = $(this).val();
+					
+					// 4개의 버튼중 하나를 선택하고, 해당 달력이 표시되며, 달력에서 날짜선택하고, 검색버튼을 클릭하면, 아래 서버에 요청하는 ajax기능을 갖고있는 아래 함수가 호출
+					fn_ajax(type, url, params, labelName);
+				});
+
+				// type : 4개버튼중 선택한 버튼,  url: 스프링부트 주소,  params: 서버로 보낼 데이터, labelName : 차트제목
+				function fn_ajax(type, url, params, labelName) {
+					
+					$.get(url, params, function (data) {
+
+
+					const labels = data.map(item => item.date || item.hour || item.weekday || item.month);
+					const values = data.map(item => item.total_sales);
+
+					$(`#${type}Options`).show();
+
+					// 차트 갱신
+					if (chart  !== undefined) {
+						chart.destroy();
+					}
+
+					const backgroundColors = [
+						'rgba(255, 99, 132, 0.2)',
+						'rgba(54, 162, 235, 0.2)',
+						'rgba(255, 206, 86, 0.2)',
+						'rgba(75, 192, 192, 0.2)',
+						'rgba(153, 102, 255, 0.2)',
+						'rgba(255, 159, 64, 0.2)',
+						'rgba(199, 199, 199, 0.2)'
+					];
+
+					const borderColors = [
+						'rgba(255, 99, 132, 1)',
+						'rgba(54, 162, 235, 1)',
+						'rgba(255, 206, 86, 1)',
+						'rgba(75, 192, 192, 1)',
+						'rgba(153, 102, 255, 1)',
+						'rgba(255, 159, 64, 1)',
+						'rgba(199, 199, 199, 1)'
+					];
+
+					// chart.js파일을 참조하여, chart객체생성.
+					// ctx : <canvas>태그를 2d로 작업하는 객체.
+					chart = new Chart(ctx, {
+						type: 'bar',   // 차트모양
+						data: {		// 차트에 사용될 데이타 작업.  labels(x축 제목), values(y축 데이타)
+							labels: labels,
+							datasets: [{
+								label: labelName,
+								data: values,
+								backgroundColor: backgroundColors,
+								borderColor: borderColors,
+								borderWidth: 1
+							}]
+						},
+						options: {
+							scales: {
+								y: {
+									beginAtZero: true
+								}
+							}
+						}
+					});
+				});
+			 }
+
+			});	// end ready event
+	
+		</script>
+
+	</th:block>
+</html>

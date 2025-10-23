@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{admin/layouts/ad_layout}">
+
+	<th:block layout:fragment="script1">
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js" integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y" crossorigin="anonymous"></script>
+	</th:block>
+	
+	
+	<th:block layout:fragment="content">
+		<div class="container mt-5">
+		<div class="row">
+			<div class="col">
+				<div class="card card-primary">
+					<div class="card-header">
+					  <h3 class="card-title">상품리뷰목록</h3>
+					</div>
+					<!-- /.card-header -->
+					<!-- list start -->
+					<div class="card-body">
+						<!-- search form start -->
+				<form id="searchForm" action="/admin/review/review_list" method="get">
+					 <div class="row">
+					 	<div class="col-1">검색어</div>	
+						<div class="col-2">												
+							<select name="searchType" class="form-control">
+								<option value="" th:selected="${''} == ${pageMaker.cri.searchType}" >전체</option>
+								<option value="n" th:selected="${'n'} == ${pageMaker.cri.searchType}">상품명</option>
+								<option value="c" th:selected="${'c'} == ${pageMaker.cri.searchType}">상품코드</option>
+								<option value="i"th:selected="${'i'} == ${pageMaker.cri.searchType}">작성자ID</option>							
+							</select>								
+						</div>					
+						<div class="col-3">
+							<input type="text" name="keyword" class="form-control" th:value="${pageMaker.cri.keyword}"  placeholder="검색어를 입력하세요.">
+						</div>
+						<div class="col-1">평점/내용</div>
+						<div class="col-2">
+							<select class="form-control" name="rev_rate">
+								<option value="" th:selected="${rev_rate == ''}">전체평점</option>
+								<option value="5" th:selected="${rev_rate == '5'}">5점</option>
+								<option value="4" th:selected="${rev_rate == '4'}">4점</option>
+								<option value="3" th:selected="${rev_rate == '3'}">3점</option>
+								<option value="2" th:selected="${rev_rate == '2'}">2점</option>
+								<option value="1" th:selected="${rev_rate == '1'}">1점</option>
+							</select>
+						</div>
+						<div class="col-3">
+							<input type="text" name="rev_content" class="form-control" th:value="${rev_content}" placeholder="작성내용..">
+						</div>
+					 </div>											
+				
+				
+				<div class="row mt-3">
+					<div class="col text-center">
+						<button type="submit" class="btn btn-primary">검색</button>
+						<button type="button" class="btn btn-outline-primary" id="btn_search_init">초기화</button>
+					</div>
+				</div>
+			</form>	
+				<div class="row mt-4">
+					<div class="col">
+					 <form name="" id="" method="post" action="">
+						<table class="table table-bordered">
+						  <thead>
+							<tr>
+							  <th style="width: 10%;">번호</th>
+							  <th style="width: 10%;">답변</th>
+							  <th style="width: 20%;">상품정보</th>
+							  <th style="width: 30%">평점 / 내용</th>
+							  <th style="width: 10%">작성자</th>
+							  <th style="width: 10%">작성일</th>
+							  <th style="width: 10%">관리</th>
+							</tr>
+						  </thead>
+						  <tbody>
+							<tr th:each="reviewDTO : ${review_list}">
+								<td>
+									[[${reviewDTO.rev_code}]]
+								</td>
+								<td>
+									<div class="alert alert-success" th:if="${#lists.size(reviewDTO.replies) > 0}">
+										답변완료
+									</div>
+									<div class="alert alert-danger" th:unless="${#lists.size(reviewDTO.replies) > 0}">
+										답변대기
+									</div>
+								</td>
+								<td>
+									<img style="width: 100px; height: 100px;" th:src="|/admin/review/image_display?dateFolderName=${reviewDTO.product.pro_up_folder}&fileName=s_${reviewDTO.product.pro_img}|">
+									[[${reviewDTO.pro_num}]] <br>
+									[[${reviewDTO.product.pro_name}]]
+								</td>
+								<td>
+									<span class="star" style="color: red;font-size: large;">[[${reviewDTO.rev_rate}]]</span><br>
+									[[${reviewDTO.rev_content}]]
+									<div class="review_reply_info" th:each="review_reply_dto : ${reviewDTO.replies}" style="border: 1px; border-style: dashed; border-radius: 10px; border-color: red ; padding: 10px;margin-top: 20px;">
+										<div class="row">
+											<div class="col" th:switch="${review_reply_dto.manager_id}">
+												<p th:case="'admin'">관리자</p>												
+											</div>
+											<div class="col">
+												<span th:text="${#temporals.format(review_reply_dto.reply_date, 'yyyy-MM-dd HH:mm:ss')}"></span>
+											</div>
+											
+										</div>
+										<div class="row">
+											<div class="col">
+												<span class="reply_text_info" th:text="${review_reply_dto.reply_text}"></span>
+											</div>
+
+										</div>
+										<div class="row">
+											<div class="col">
+												<button type="button" class="btn btn-outline-success" name="btn_reply_edit" th:data-rev_code="${reviewDTO.rev_code}"  th:data-reply_id="${review_reply_dto.reply_id}">답변수정</button>
+												<button type="button" class="btn btn-outline-danger" name="btn_reply_del" th:data-reply_id="${review_reply_dto.reply_id}">답변삭제</button>
+											</div>
+										</div>
+
+									</div>
+								 
+								</td>
+								<td>
+									[[${reviewDTO.mbsp_id}]]
+								</td>
+								<td>
+									[[${#temporals.format(reviewDTO.rev_date, 'yyyy-MM-dd HH:mm:ss')}]]
+								</td>
+								<td>
+									<button type="button" name="btn_review_reply" class="btn btn-outline-primary" th:data-rev_code="${reviewDTO.rev_code}">답변하기</button>
+								</td>
+							</tr>
+							
+						  </tbody>
+						</table>
+					</form>
+					
+					
+					<!-- 리뷰목록의 모든 검색정보 : 페이지번호 클릭할 때, 현재 목록상태를 작업(수정,삭제)을 하고 돌아왔을 때 유지. -->
+					<form id="criteriaForm" action="/admin/review/review_list" method="get">
+						<!-- SearchCriteria 필드-->
+						<input type="hidden" name="page" th:value="${pageMaker.cri.page}">
+						<input type="hidden" name="perPageNum" th:value="${pageMaker.cri.perPageNum}">
+						<input type="hidden" name="searchType" th:value="${pageMaker.cri.searchType}">
+						<input type="hidden" name="keyword" th:value="${pageMaker.cri.keyword}">
+						<!-- 평점 -->
+						<input type="hidden" name="rev_rate" th:value="${rev_rate}">
+						<!-- 상품후기 내용 -->
+						<input type="hidden" name="rev_content" th:value="${rev_content}">
+
+						
+					</form>
+				</div>
+				</div>	 
+			</div>
+
+					<!-- 페이징출력위치 -->
+					 <div class="card-footer clearfix">
+						<nav aria-label="Page navigation example">
+							<ul class="pagination">
+							<!-- 이전표시여부 Previous  pageMaker.getPrev() -->
+							<th:block th:if="${pageMaker.prev}">
+								<li class="page-item"><a class="page-link movepage" th:href="${pageMaker.startPage - 1}">Previous</a></li>
+							</th:block>
+								<!--  페이지번호 출력.  1  2  3  4  5 -->
+								<th:block th:each="num : ${#numbers.sequence(pageMaker.startPage, pageMaker.endPage)}">
+								<li class="page-item" th:classappend="${pageMaker.cri.page == num ? 'active' : ''}">
+									<a class="page-link movepage" th:href="${num}" th:text="${num}"></a>
+								</li>        
+								</th:block>
+							
+							<!--  다음표시여부 Next -->
+							<th:block th:if="${pageMaker.next}">
+								<li class="page-item"><a class="page-link movepage" th:href="${pageMaker.endPage + 1}">Next</a></li>
+							</th:block>
+							</ul>
+						</nav>
+					</div>
+				 </div>
+			</div>
+		</div>
+	  </div>
+
+
+	  <!-- 상품리뷰 Modal 모달대화상자 : 답변하기 -->
+		<div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+			
+			<!-- Header -->
+			<div class="modal-header">
+				<h1 class="modal-title fs-5" id="reviewModalLabel">상품 리뷰 상세보기[<span id="review_reviewcode"></span>]</h1>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			
+			<!-- Body -->
+			<div class="modal-body">
+				<!-- 상품 정보 -->
+				<div class="d-flex align-items-center mb-3">
+				<img id="review_product_img" alt="상품이미지" class="img-thumbnail me-3" style="width: 100px; height: 100px; object-fit: cover;">
+				<div>
+					<h5 id="product-name">상품명 예시</h5>
+					<!-- 평점 -->
+					<div id="product-rating" class="text-warning">
+						<span class="star2" style="color: red;font-size: large;"></span>
+						<span id="review_rev_rate"></span>						
+					</div>
+				</div>
+				</div>
+
+				<!-- 리뷰 내용 -->
+				<div class="mb-3">
+				<label for="review-content" class="form-label fw-bold">상품 후기</label>
+				<p id="review-content" class="border p-2 rounded bg-light">
+					상품 품질이 매우 좋습니다. 배송도 빠르고 만족합니다.
+				</p>
+				</div>
+
+				<!-- 관리자 답변 -->
+				<div class="mb-3">
+				<label for="admin-reply" class="form-label fw-bold">관리자 답변</label>
+				<textarea class="form-control" id="admin-reply" rows="3" placeholder="답변을 작성하세요..."></textarea>
+				</div>
+			</div>
+			
+			<!-- Footer -->
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+				<button type="button" class="btn btn-primary" id="btn_review_reply">답변 등록</button>
+				<button type="button" class="btn btn-primary" id="btn_review_reply_edit" style="display: none;">답변 수정</button>
+			</div>
+			</div>
+		</div>
+		</div>
+
+		 
+
+
+	<script>
+		const myModal = new bootstrap.Modal('#reviewModal', {
+  			keyboard: false
+		});
+
+		$(document).ready(function() {
+			// 상품후기 답변하기 버튼 클릭이벤트 설정 name="btn_review_reply"
+			$("button[name='btn_review_reply']").on("click", function() {
+				
+				let rev_code = $(this).data("rev_code");
+				$.ajax({
+					url: '/admin/review/review_info/' + rev_code,
+					type: 'get',
+					dataType: 'json',
+					success: function(result) {
+						console.log("상품후기정보", result);
+
+						// 이전상태 초기화
+						$("#review_product_img").attr("src", "");
+						$("#product-name").html("");
+						$("#review-content").html("");
+						$("#review_reviewcode").html("");
+						$("div#product-rating span").html("");
+						$("#review_rev_rate").html("");
+						$("#admin-reply").val("");
+						
+						
+						let url = `/admin/review/image_display?dateFolderName=${result.pro_up_folder}&fileName=s_${result.pro_img}`;
+						$("#review_product_img").attr("src", url);
+
+						// id="product-name"
+						$("#product-name").html(result.pro_name);
+
+						// id="review-content"
+						$("#review-content").html(result.rev_content);
+
+						// id="review_reviewcode"
+						$("#review_reviewcode").html(result.rev_code);
+						
+						// id="product-rating"
+						$("div#product-rating span").html(result.rev_rate);
+
+						// id="review_rev_rate"
+						$("#review_rev_rate").html(`(${result.rev_rate}.0 / 5)`);
+
+						// 답변 버튼에 상품후기코드를 data-rev_code="상품후기코드"
+						 $("button#btn_review_reply").attr("data-rev_code", result.rev_code);
+						
+
+						displayStar2();   // 숫자를 별평점으로 변환.
+
+
+
+					},
+					error : function() {
+
+					}
+				});
+				
+				$("button#btn_review_reply_edit").hide();
+				$("button#btn_review_reply").show();
+				
+				myModal.show();
+			});
+
+			//  상품후기 답변저장. id="btn_review_reply"
+			$("button#btn_review_reply").on("click", function() {
+				let rev_code = $(this).data("rev_code");
+
+				// id="admin-reply"
+				let admin_reply = $("#admin-reply").val();
+
+				$.ajax({
+					url: '/admin/review/reply_insert',
+					type: 'post',
+					headers : { "Content-Type" : "application/json"},
+					data: JSON.stringify({rev_code: rev_code, reply_text : admin_reply}),
+					dataType: 'text',
+					success: function(result) {
+						if(result == "success") {
+							alert("답변달기 등록됨");
+							location.href = "/admin/review/review_list";
+						}
+					},
+					error: function() {
+
+					}
+				});
+			});
+
+			// name="btn_reply_edit" 답변수정 버튼.
+			$("button[name='btn_reply_edit']").on("click", function() {
+				
+				// 상품후기내용 불러오기.
+				let rev_code = $(this).data("rev_code"); // 상품후기 pk
+				let reply_id = $(this).data("reply_id"); // 상품후기 답변 pk
+				// 상품후기 Modal 수정하기 버튼에 상품후기답변 pk 저장.
+				$("button#btn_review_reply_edit").attr("data-reply_id", reply_id);
+
+				$.ajax({
+					url: '/admin/review/review_info/' + rev_code,
+					type: 'get',
+					dataType: 'json',
+					success: function(result) {
+						console.log("상품후기정보", result);
+
+						// 이전상태 초기화
+						// $("#review_product_img").attr("src", "");
+						// $("#product-name").html("");
+						// $("#review-content").html("");
+						// $("#review_reviewcode").html("");
+						// $("div#product-rating span").html("");
+						// $("#review_rev_rate").html("");
+						// $("#admin-reply").html("");
+						
+						
+						let url = `/admin/review/image_display?dateFolderName=${result.pro_up_folder}&fileName=s_${result.pro_img}`;
+						$("#review_product_img").attr("src", url);
+
+						// id="product-name"
+						$("#product-name").html(result.pro_name);
+
+						// id="review-content"
+						$("#review-content").html(result.rev_content);
+
+						// id="review_reviewcode"
+						$("#review_reviewcode").html(result.rev_code);
+						
+						// id="product-rating"
+						$("div#product-rating span").html(result.rev_rate);
+
+						// id="review_rev_rate"
+						$("#review_rev_rate").html(`(${result.rev_rate}.0 / 5)`);
+
+						// 답변 버튼에 상품후기코드를 data-rev_code="상품후기코드"
+						 $("button#btn_review_reply").attr("data-rev_code", result.rev_code);
+						
+
+						displayStar2();   // 숫자를 별평점으로 변환.
+
+
+
+					},
+					error : function() {
+
+					}
+				});
+
+
+
+				$("button#btn_review_reply_edit").show();
+				$("button#btn_review_reply").hide();
+
+				let reply_txt = $(this).closest("div.review_reply_info").find("span.reply_text_info").html();
+				$("#admin-reply").val(reply_txt);
+
+
+				myModal.show();
+			});
+
+			// 답변수정하기.   id="btn_review_reply_edit"
+			$("button#btn_review_reply_edit").on("click", function() {
+
+				let reply_id = $(this).data("reply_id");
+				let admin_reply = $("#admin-reply").val(); // 관리자 답변내용
+
+				//console.log("관리자답변", admin_reply);
+
+				//return;
+
+				$.ajax({
+					url: '/admin/review/reply_modify',
+					type: 'post',
+					data: {reply_id : reply_id, reply_text : admin_reply},
+					dataType : 'text',
+					success : function(result) {
+						if(result == "success") {
+							alert("답변글이 수정됨");
+							location.href = "/admin/review/review_list";
+						}
+					},
+					error : function() {
+
+					}
+
+				});
+			});
+
+			// 답변삭제 name="btn_reply_del"
+			$("button[name='btn_reply_del']").on("click", function() {
+				let reply_id = $(this).data("reply_id");
+
+				if(!confirm(reply_id + " 번 답변글을 삭제하시겠습니까?")) return;
+
+				$.ajax({
+					url: '/admin/review/reply_delete/' + reply_id,
+					type: 'delete',
+					headers: {
+						"Content-Type" : "application/json", "X-HTTP-Method-Override" : "DELETE"
+					},
+					dataType: 'text',
+					success : function(result) {
+						if(result == "success") {
+							alert("답변글이 삭제됨");
+							location.href = "/admin/review/review_list";
+						}
+					},
+					error : function(xhr, status, error) {
+						console.error(error);
+						alert("에러가 발생됨");
+					}
+				});
+			});
+
+			// 페이지번호 클릭 이벤트설정   <a class="movepage">1</a>  기능: 검색정보를 전송.
+			let criteriaForm = $("#criteriaForm");
+			$("a.movepage").on("click", function(e){
+				e.preventDefault();
+				// 현재 선택한 페이지번호 변경.
+				criteriaForm.find("input[name='page']").val($(this).attr("href"));
+				criteriaForm.submit();
+
+			});
+
+		}); // ready end event
+
+	</script>
+	
+	
+	</th:block>
+	
+	
+	<th:block layout:fragment="script2">
+
+		<script>
+			displayStar();
+
+			// 평점을 별로 출력하는 함수.
+			function displayStar() {
+				const spanStars = document.querySelectorAll("span.star");
+
+				const totalStars = 5;
+
+				spanStars.forEach( span => {
+					const rev_rate = parseInt(span.textContent, 10); // 평점을 정수형으로 변환
+					if(!isNaN(rev_rate) && rev_rate > 0 && rev_rate <= totalStars) {
+						span.textContent = "★".repeat(rev_rate) + "☆".repeat(totalStars - rev_rate);
+					}else {
+						span.textContent = "Invalid number";
+					}
+				});
+			}
+
+			function displayStar2() {
+				const spanStars = document.querySelectorAll("span.star2");
+
+				const totalStars = 5;
+
+				spanStars.forEach( span => {
+					const rev_rate = parseInt(span.textContent, 10); // 평점을 정수형으로 변환
+					if(!isNaN(rev_rate) && rev_rate > 0 && rev_rate <= totalStars) {
+						span.textContent = "★".repeat(rev_rate) + "☆".repeat(totalStars - rev_rate);
+					}else {
+						span.textContent = "Invalid number";
+					}
+				});
+			}
+		</script>
+	
+	</th:block>
+
+</html>

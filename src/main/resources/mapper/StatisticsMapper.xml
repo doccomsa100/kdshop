@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kd.basic.admin.statistics.StatisticsMapper">
+
+	<select id="getDailyStatistics" resultType="hashmap">
+		
+			WITH RECURSIVE date_list AS (
+		    -- 1일 생성
+		    SELECT DATE(CONCAT(#{date}, '-01')) AS dt
+		    UNION ALL
+		    -- 다음 날을 재귀적으로 추가
+		    SELECT DATE_ADD(dt, INTERVAL 1 DAY)
+		    FROM date_list
+		    WHERE MONTH(DATE_ADD(dt, INTERVAL 1 DAY)) = MONTH(CONCAT(#{date}, '-01'))
+		)
+		SELECT 
+		    DATE_FORMAT(d.dt, '%Y-%m-%d') AS date,
+		    COALESCE(SUM(o.ORD_PRICE), 0) AS total_sales
+		FROM 
+		    date_list d
+		LEFT JOIN 
+		    ORDER_TBL o
+		    ON DATE(o.ORD_REGDATE) = d.dt
+		GROUP BY 
+		    d.dt
+		ORDER BY 
+		    d.dt ASC
+        
+	</select>
+	
+	<select id="getHourlyStatistics" resultType="hashmap">
+	
+		<![CDATA[
+				WITH RECURSIVE hours AS (
+		    SELECT 0 AS hour
+		    UNION ALL
+		    SELECT hour + 1
+		    FROM hours
+		    WHERE hour < 23
+		)
+		SELECT 
+		    h.hour,
+		    COALESCE(SUM(o.ORD_PRICE), 0) AS total_sales
+		FROM 
+		    hours h
+		LEFT JOIN 
+		    ORDER_TBL o
+		    ON HOUR(o.ORD_REGDATE) = h.hour
+		    AND o.ORD_REGDATE >= #{start_date}
+		    AND o.ORD_REGDATE < #{end_date}
+		GROUP BY 
+		    h.hour
+		ORDER BY 
+		    h.hour ASC
+				]]>
+	</select>
+	
+	<select id="getWeeklyStatistics" resultType="hashmap">
+		<![CDATA[
+			SELECT 
+			    w.weekday,
+			    COALESCE(SUM(o.ORD_PRICE), 0) AS total_sales
+			FROM 
+			    (
+			        SELECT 'Monday' AS weekday UNION ALL
+			        SELECT 'Tuesday' UNION ALL
+			        SELECT 'Wednesday' UNION ALL
+			        SELECT 'Thursday' UNION ALL
+			        SELECT 'Friday' UNION ALL
+			        SELECT 'Saturday' UNION ALL
+			        SELECT 'Sunday'
+			    ) AS w
+			LEFT JOIN 
+			    ORDER_TBL o
+			    ON DAYNAME(o.ORD_REGDATE) = w.weekday
+			    AND o.ORD_REGDATE >= #{start_date}
+			    AND o.ORD_REGDATE < #{end_date}
+			GROUP BY 
+			    w.weekday
+			ORDER BY 
+			    FIELD(w.weekday, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')
+		]]>
+	</select>
+	
+	<select id="getMonthlyStatistics" resultType="hashmap">
+	
+		SELECT 
+		    m.month,
+		    COALESCE(SUM(o.ORD_PRICE), 0) AS total_sales
+		FROM 
+		    (
+		        SELECT 1 AS month UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL
+		        SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL
+		        SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL
+		        SELECT 10 UNION ALL SELECT 11 UNION ALL SELECT 12
+		    ) AS m
+		LEFT JOIN 
+		    ORDER_TBL o
+		    ON MONTH(o.ORD_REGDATE) = m.month
+		    AND YEAR(o.ORD_REGDATE) = #{year}
+		GROUP BY 
+		    m.month
+		ORDER BY 
+		    m.month ASC
+	
+	
+	</select>
+	
+	<select id="getMonthlyCount" resultType="int">
+	
+		SELECT
+    		COUNT(ORD_CODE) AS current_month_orders
+		FROM
+    		ORDER_TBL
+		WHERE
+    		YEAR(ORD_REGDATE) = YEAR(NOW())
+    	AND 
+    		MONTH(ORD_REGDATE) = MONTH(NOW())
+	
+	</select>
+	
+	<select id="getMonthlySalesTotal" resultType="int">
+	
+		SELECT
+    		IFNULL(SUM(ORD_PRICE), 0) AS current_month_total_sales
+		FROM
+    		ORDER_TBL
+		WHERE
+    		YEAR(ORD_REGDATE) = YEAR(NOW())
+    	AND 
+    		MONTH(ORD_REGDATE) = MONTH(NOW())
+    	AND 
+    		ORD_STATUS = '결제완료'
+	
+	</select>
+	
+	<select id="getTotalProductCount" resultType="int">
+	
+		SELECT
+    		COUNT(*) AS total_products
+		FROM
+    		PRODUCT_TBL
+		where 
+			pro_buy = 'Y'
+	
+	</select>
+	
+	<select id="getSoldOutProductCount" resultType="int">
+	
+		SELECT
+    		COUNT(*) AS total_products
+		FROM
+    		PRODUCT_TBL
+		where 
+			pro_buy = 'N'
+	
+	</select>
+	
+	<select id="getMonthlyOrderCategoryStats" resultType="map">
+	
+		SELECT
+		    C1.CATE_NAME AS primary_category_name,
+		    IFNULL(COUNT(OD.ORD_CODE), 0) AS total_orders    
+		FROM
+		    CATEGORY_TBL C1
+		LEFT JOIN
+		    CATEGORY_TBL C2 ON C1.CATE_CODE = C2.CATE_PRTCODE
+		LEFT JOIN
+		    PRODUCT_TBL P ON C2.CATE_CODE = P.CATE_CODE
+		LEFT JOIN
+		    ORDETAIL_TBL OD ON P.PRO_NUM = OD.PRO_NUM
+		LEFT JOIN
+		    ORDER_TBL O ON OD.ORD_CODE = O.ORD_CODE
+		    AND YEAR(O.ORD_REGDATE) = YEAR(NOW())
+		    AND MONTH(O.ORD_REGDATE) = MONTH(NOW())
+		    AND O.ORD_STATUS = '결제완료'
+		WHERE
+		    C1.CATE_PRTCODE IS NULL
+		GROUP BY
+		    C1.CATE_NAME
+		ORDER BY
+		    C1.CATE_NAME ASC
+	
+	</select>
+	
+	<select id="getThisWeekOrderAmount" resultType="map">
+		<![CDATA[
+			WITH RECURSIVE
+			    dates_in_week (date_val) AS (
+			        SELECT DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) -- 이번 주 월요일
+			        UNION ALL
+			        SELECT DATE_ADD(date_val, INTERVAL 1 DAY)
+			        FROM dates_in_week
+			        WHERE DATE_ADD(date_val, INTERVAL 1 DAY) <= DATE_ADD(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 6 DAY) -- 이번 주 일요일
+			    )
+			SELECT
+			    T1.date_val AS order_date,
+			    IFNULL(SUM(T2.ORD_PRICE), 0) AS daily_total_price
+			FROM
+			    dates_in_week T1
+			LEFT JOIN
+			    ORDER_TBL T2 ON T1.date_val = DATE(T2.ORD_REGDATE)
+			GROUP BY
+			    T1.date_val
+			ORDER BY
+			    order_date
+		]]>
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+
+</mapper>

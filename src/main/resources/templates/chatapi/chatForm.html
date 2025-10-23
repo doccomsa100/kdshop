@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{admin/layouts/ad_layout}">
+
+	<th:block layout:fragment="content">
+	<!-- form start -->
+    <form action="/admin/" method="get">
+      <div class="card-body">
+        <textarea cols="80" rows="5" id="question"></textarea><br>
+        <button type="button" id="btn_chatbot_request">챗봇요청</button>
+      </div>
+      <div id="result"></div>  
+    </form>
+	</th:block>
+	
+	<th:block layout:fragment="script2">
+    <script>
+
+        $(document).ready(function() {
+          // id="btn_chatbot_request"
+          $("#btn_chatbot_request").on("click", function() {
+            $.ajax({
+              url: '/chatapi/chat?question=' + $("#question").val(),
+              type: 'get',
+              dataType : 'text',
+              success: function(response) {
+                $("#result").html(response);
+              }
+            });
+          });
+
+        });  // ready end evnet
+    </script>
+	</th:block>
+</html>

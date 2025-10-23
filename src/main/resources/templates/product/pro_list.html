@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{layouts/layout}">
+
+
+	<th:block layout:fragment="content">
+	<div class="row">
+		<div class="col text-center mb-3 mt-3">
+			<h3 th:utext="${cate_name}"></h3>
+		</div>
+	</div>
+	<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+	  <div class="col" th:each="productDTO : ${produtctList}">
+	    <div class="card shadow-sm h-100">
+	      <!-- 상품 이미지 -->
+		  <a href="#" th:data-pro_num="${productDTO.pro_num}" class="pro_info">
+	      <img th:src="|/product/image_display?dateFolderName=${productDTO.pro_up_folder}&fileName=s_${productDTO.pro_img}|" 
+	           class="card-img-top" 
+	           alt="상품 이미지" 
+	           height="255" 
+	           style="object-fit: cover;">
+		  </a> 
+	
+	      <div class="card-body d-flex flex-column">
+	        <!-- 상품 제목 -->
+	        <h5 class="card-title text-truncate fw-bold mb-2" 
+	            th:text="${productDTO.pro_name}" 
+	            title="상품 제목">
+	          상품 제목
+	        </h5>
+	
+	        <!-- 가격 -->
+	        <p class="mb-1 fs-5 text-primary fw-semibold">
+	          <span th:text="${#numbers.formatInteger(productDTO.pro_price, 3, 'COMMA')}"></span> 원
+	        </p>
+	
+	        <!-- 재고 상태 -->
+	        <p class="mb-3">
+	          <span th:if="${productDTO.pro_amount > 0}" 
+	                class="badge bg-success">
+	            재고: <span th:text="${productDTO.pro_amount}"></span> 개
+	          </span>
+	          <span th:if="${productDTO.pro_amount == 0}" 
+	                class="badge bg-danger">
+	            품절
+	          </span>
+	        </p>
+	
+	        <!-- 수량 선택 -->
+	        <div class="mb-3" th:if="${productDTO.pro_amount > 0}">
+	          <label class="form-label small mb-1">구매 수량</label>
+	          <select class="form-select form-select-sm" name="quantity">
+	            <option th:each="i : ${#numbers.sequence(1, productDTO.pro_amount)}"
+	                    th:value="${i}"
+	                    th:text="${i}">
+	            </option>
+	          </select>
+	        </div>
+	
+	        <!-- 버튼 영역 -->
+	        <div class="mt-auto d-flex justify-content-between gap-2">
+	          <!-- 장바구니 -->
+	          <input type="hidden" name="pro_num" th:value="${productDTO.pro_num}">
+	            <input type="hidden" name="quantity" value="1" class="selected-qty">
+	            <button type="button" name="btn_cart_add" th:data-pro_num="${productDTO.pro_num}" class="btn btn-outline-primary btn-sm w-100">🛒 장바구니</button>
+	          
+	          <!-- 구매하기 -->
+	          	<input type="hidden" name="pro_num" th:value="${productDTO.pro_num}">
+	            <input type="hidden" name="quantity" value="1" class="selected-qty">
+	            <button type="button" name="btn_buy_add" class="btn btn-success btn-sm w-100" th:data-pro_num="${productDTO.pro_num}">💳 구매하기</button>
+	          
+	        </div>
+	      </div>
+	    </div>
+	  </div>
+</div>
+	
+
+	
+
+
+	
+	<!--  페이징 출력위치 -->
+	<div class="row mt-5">
+		<div class="col">
+			<nav aria-label="Page navigation example">
+				  <ul class="pagination justify-content-center">
+				    <th:block th:if="${pageMaker.prev}">
+				    <li class="page-item"><a class="page-link"  th:href="|/product/pro_list${pageMaker.makeSearch(pageMaker.startPage-1)}}&cate_code=${cate_code}|">Previous</a></li>
+				    </th:block>
+				    
+				    <th:block th:each="num : ${#numbers.sequence(pageMaker.startPage, pageMaker.endPage)}">
+				    <li class="page-item" th:classappend="${pageMaker.cri.page == num ? 'active' : ''}"><a class="page-link" th:href="|/product/pro_list${pageMaker.makeSearch(num)}&cate_code=${cate_code}|" th:text="${num}"></a></li>
+				    </th:block>
+				    
+				    <th:block th:if="${pageMaker.next}">
+				    <li class="page-item"><a class="page-link" th:href="|/product/pro_list${pageMaker.makeSearch(pageMaker.endPage+1)}&cate_code=${cate_code}|">Next</a></li>
+				    </th:block>
+				  </ul>
+				</nav>
+		</div>
+	</div>
+	
+	</th:block>
+	
+	<th:block layout:fragment="script2">
+		<script th:inline="javascript">
+			$(document).ready(function() {
+
+				// 장바구니버튼 클릭이벤트 설정  name="btn_cart_add"
+				$("button[name='btn_cart_add']").on("click", function() {
+					let pro_num = $(this).data("pro_num");
+
+					// 현재 선택한 장바구니버튼 태그$(this) 에서 장바구니버튼태그와 수량태그를 
+					// 감싸는 부모태그 div.card로 위치를 이동하여
+					// find()메서드로 수량태그를 찾아, 현재 수량값을 읽어온다.
+					let cart_amount = $(this).parents("div.card").find("select[name='quantity']").val();
+
+					// console.log("상품코드", pro_num);
+					// console.log("수량", cart_amount);
+
+					$.ajax({
+						url: '/cart/cart_add',
+						type: 'post',
+						data: {pro_num: pro_num, cart_amount: cart_amount},
+						dataType: 'text',
+						success: function(data) {
+							if(data == "success") {
+								alert("장바구니에 등록됨");
+								if(confirm("장바구니로 이동하겠습니까?")) {
+									location.href = "/cart/cart_list";
+								}
+							}
+						}
+					});
+				});
+
+
+				// 상품 이미지 클릭.  <a href="#" class="pro_info">이미지</a>
+				$("a.pro_info").on("click", function(e) {
+					e.preventDefault();
+					let pro_num = $(this).data("pro_num");
+					let cate_name =  encodeURIComponent([[${cate_name}]]); // 맨투맨&후드티.   & 가 구분자로 사용되기때문에 데이터에 포함되어 있으면 에러발생
+
+					location.href = `/product/pro_detail?pro_num=${pro_num}&cate_name=${cate_name}`;
+
+
+				});
+
+			}); // ready-end envent
+
+
+			// 자바스크립트 문법으로 구매버튼 클릭이벤트 등록.  <button name="btn_buy_add" data-pro_num="100">
+			document.querySelector("button[name='btn_buy_add']").addEventListener("click", function() {
+				let pro_num = this.getAttribute("data-pro_num");
+				// 선택한 버튼에서 가장 가까운 조상(부모포함)중에 div.card-body 선택자를 가진 태그를 찾고, 그 밑으로 input[name='cart_amount'] 태그를 찾아 값을 읽어온다.
+				let cart_amount = this.closest("div.card-body").querySelector("select[name='quantity']").value;
+
+				let url = `/order/order_info?pro_num=${pro_num}&cart_amount=${cart_amount}&type=buy`;
+				location.href = url;
+			});
+
+		</script>
+	
+	</th:block>
+	
+	
+	
+	
+	
+	
+	
+</html>

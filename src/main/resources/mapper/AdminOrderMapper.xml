@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kd.basic.admin.order.AdminOrderMapper">
+
+	<select id="order_list" resultType="map">
+	
+		select 
+			o.ord_code, 
+			o.ord_name, 
+			o.ord_price, 
+			o.ord_status, 
+			pt.payment_id, 
+			pt.payment_method, 
+			pt.payment_status, 
+			o.ord_regdate 
+		from 
+			order_tbl o
+		inner join 
+			payment_tbl pt
+		on 
+			o.ord_code = pt.ord_code
+		where 
+			o.ord_code > 0	
+			
+		<include refid="search"></include>
+		<include refid="period"></include>
+		<include refid="payment_method"></include>
+		<include refid="ord_status"></include>
+			
+		order by 
+			o.ord_regdate desc
+		limit 
+			#{cri.pageStart}, #{cri.perPageNum}
+		
+		
+	</select>
+	
+	<select id="getTotalcount" resultType="int">
+		
+		select 
+			count(*)
+		from 
+			order_tbl o
+		inner join 
+			payment_tbl pt
+		on 
+			o.ord_code = pt.ord_code
+			
+		where 
+			o.ord_code > 0
+			
+		<include refid="search"></include>	
+		<include refid="period"></include>
+		<include refid="payment_method"></include>
+		<include refid="ord_status"></include>
+	</select>
+	
+	<!-- 공통으로 사용 -->
+	<sql id="search">
+		<if test="cri.searchType != null">
+			<if test="cri.searchType == 'c'.toString()">
+			  and o.ord_code = #{cri.keyword}
+			</if>
+			<if test="cri.searchType == 'm'.toString()">
+			  and o.mbsp_id = #{cri.keyword}
+			</if>
+			<if test="cri.searchType == 'o'.toString()">
+			  and o.ord_name = #{cri.keyword}
+			</if>
+			<if test="cri.searchType == 'p'.toString()">
+			  and pt.payment_method like concat('%', #{cri.keyword}, '%')
+			</if>
+		</if>	
+	</sql>
+	
+	<sql id="period">
+		<if test="period != null and !period.equals('') and start_date != null and !start_date.equals('') and end_date != null and !end_date.equals('')">
+			<if test="period == 'ord_regdate'.toString()">
+			   <![CDATA[ 
+			   and o.ord_regdate >= date(#{start_date}) and o.ord_regdate < date(#{end_date}) + 1
+				]]>
+			</if>
+			<if test="period == 'payment_date'.toString()">
+			    <![CDATA[ 
+			    and pt.payment_date >= date(#{start_date}) and pt.payment_date < date(#{end_date}) + 1
+			    ]]>
+			</if>
+		</if>
+	
+	</sql>
+	
+	<sql id="payment_method">
+		<if test="payment_method != null and !payment_method.equals('')">
+		
+			and pt.payment_method like concat('%', #{payment_method}, '%')
+			
+		</if>
+	</sql>
+	
+	<sql id="ord_status">
+		<if test="ord_status != null and !ord_status.equals('')">
+		
+		and o.ord_status like concat('%', #{ord_status}, '%') 
+				
+		</if>
+	</sql>
+	
+	<update id="order_status_change" parameterType="map">
+	
+		update
+			order_tbl
+		set
+			ord_status = #{ord_status}
+		where
+			ord_code = #{ord_code}
+	
+	</update>
+	
+	<select id="orderdetail_info" resultType="map" parameterType="Integer">
+	
+		select 
+			o.ord_code, 
+			pt.pro_up_folder, 
+			pt.pro_img, 
+			pt.pro_name,
+			pt.pro_num,
+			ot.dt_price,
+			ot.dt_amount,
+			o.ord_price 
+		from 
+			order_tbl o
+		inner join 
+			ordetail_tbl ot 
+		on 
+			o.ord_code = ot.ord_code 
+		inner join 
+			product_tbl pt 
+		on 
+			ot.pro_num = pt.pro_num
+		where 
+			o.ord_code = #{ord_code}
+	
+	</select>
+	
+	<select id="order_info" resultType="com.kd.basic.common.dto.OrderDTO" parameterType="Integer">
+	
+		select 
+			ord_code,
+			mbsp_id,
+			ord_name, 
+			ord_tel,
+			ord_addr_basic, 
+			ord_addr_detail, 
+			ord_addr_zipcode, 
+			ord_mail,
+			ord_message 
+		from 
+			order_tbl
+		where 
+			ord_code = #{ord_code}
+	
+	</select>
+	
+	<delete id="order_product_del" parameterType="map">
+	
+		delete from 
+			ordetail_tbl 
+		where 
+			ord_code = #{ord_code} and pro_num = #{pro_num}
+	
+	</delete>
+	
+	<update id="order_price_change" parameterType="map">
+	
+		update 
+			order_tbl
+		set 
+			ord_price = ord_price - #{unitprice}
+		where 
+			ord_code = #{ord_code}
+	
+	</update>
+	
+	<update id="admin_ord_message" parameterType="map">
+	
+		update 
+			order_tbl
+		set 
+			ord_message  = #{ord_message}
+		where 
+			ord_code = #{ord_code}
+	
+	</update>
+	
+	<update id="order_info_edit" parameterType="com.kd.basic.common.dto.OrderDTO">
+	
+		update 
+			order_tbl
+		set 
+			ord_name = #{ord_name}, 
+			ord_addr_basic = #{ord_addr_basic}, 
+			ord_addr_detail = #{ord_addr_detail}, 
+			ord_addr_zipcode = #{ord_addr_zipcode}, 
+			ord_tel = #{ord_tel}, 
+			ord_mail = #{ord_mail}
+		where 
+			ord_code = #{ord_code}
+	
+	</update>
+	
+
+
+</mapper>

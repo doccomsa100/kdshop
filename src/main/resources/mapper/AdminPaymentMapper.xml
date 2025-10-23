@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kd.basic.admin.payment.AdminPaymentMapper">
+
+	<update id="payment_status_change" parameterType="map">
+	
+		update
+			payment_tbl
+		set
+			payment_status = #{payment_status}
+		where
+			ord_code = #{ord_code}
+	
+	</update>
+	
+	<select id="payment_info" resultType="com.kd.basic.common.dto.PaymentDTO" parameterType="Integer">
+		
+		select 
+			payment_id, 
+			ord_code, 
+			payment_method, 
+			payment_price, 
+			payment_status, 
+			payment_date  
+		from 
+			payment_tbl
+		where 
+			ord_code = #{ord_code}
+	
+	
+	</select>
+	
+	<update id="payment_price_change" parameterType="map">
+	
+		update 
+			payment_tbl
+		set 
+			payment_price = payment_price  - #{unitprice}
+		where 
+			ord_code = #{ord_code}
+	
+	</update>
+	
+	
+
+</mapper>

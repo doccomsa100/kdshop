@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kd.basic.admin.delivery.AdminDeliveryMapper">
+
+	<update id="delivery_info_edit" parameterType="com.kd.basic.common.dto.DeliveryDTO">
+		update 
+			delivery_tbl
+		set 
+			shipping_addr = #{shipping_addr}, 
+			shipping_deaddr = #{shipping_deaddr}, 
+			shipping_zipcode = #{shipping_zipcode}	
+		where ord_code = #{ord_code}
+	
+	</update>
+
+</mapper>

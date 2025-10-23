@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kd.basic.cart.CartMapper">
+
+	<insert id="cart_add" parameterType="com.kd.basic.cart.CartDTO">
+		
+		insert into 
+			cart_tbl(pro_num, mbsp_id, cart_amount)
+		values
+			(#{pro_num}, #{mbsp_id}, #{cart_amount})
+		on duplicate key
+			update cart_amount = cart_amount + #{cart_amount}
+	
+	</insert>
+	
+	<select id="cart_list" resultType="Map" parameterType="String">
+		select 
+			p.pro_num, 
+			p.pro_name, 
+			p.pro_price, 
+			p.pro_up_folder, 
+			p.pro_img, 
+			c.cart_amount,
+			c.cart_amount * p.pro_price as unitprice 
+		from 
+			cart_tbl c 
+		inner join 
+			product_tbl p
+		on 
+			c.pro_num = p.pro_num
+		where 
+			c.mbsp_id = #{mbsp_id}
+	
+	</select>
+	
+	<select id="getCartTotalPriceByUserId" resultType="Integer" parameterType="String">
+	
+		select 
+			sum(c.cart_amount * p.pro_price ) as totalprice
+		from 
+			cart_tbl c 
+		inner join 
+			product_tbl p
+		on 
+			c.pro_num = p.pro_num 
+		where 
+			c.mbsp_id = #{mbsp_id}
+	
+	</select>
+	
+	<delete id="cart_empty" parameterType="String">
+	
+		delete from 
+			cart_tbl
+		where 
+			mbsp_id = #{mbsp_id}
+	
+	</delete>
+	
+	<delete id="cart_sel_delete" parameterType="map">
+	
+		delete from
+			cart_tbl
+		where
+			mbsp_id = #{mbsp_id}
+		and 
+			pro_num in 
+			
+			<foreach collection="pro_num_arr" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+				
+	</delete>
+	
+	<update id="cart_quantity_change" parameterType="com.kd.basic.cart.CartDTO">
+	
+		update 
+			cart_tbl
+		set 
+			cart_amount = #{cart_amount}
+		where 
+			mbsp_id = #{mbsp_id} 
+		and 
+			pro_num = #{pro_num}
+	
+	
+	</update>
+	
+	
+</mapper>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{layouts/layout}">
+<th:block layout:fragment="content">
+	<div class="row">
+	    <div class="col text-center mb-3 mt-3">
+	      <h3>장바구니</h3>
+	    </div>
+    </div>
+  <div class="row">        
+    <div class="col">
+      <form id="cartForm" method="post" action="/cart/cart_sel_delete">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col" style="width: 15%;">전체선택<br><input type="checkbox" id="checkAll"></th>
+            <th scope="col" style="width: 25%;">상품이미지</th>
+            <th scope="col" style="width: 15%;">상품이름</th>
+            <th scope="col" style="width: 15%;">가격</th>
+            <th scope="col" style="width: 15%;">수량</th>
+            <th scope="col" style="width: 15%;">합계</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each= "item : ${cart_list}">
+            <td>
+              <input type="checkbox" name="check" th:value="${item['pro_num']}">
+            </td>
+            <td>
+              <img style="width: 100px;height: 100px;" th:src="${'/cart/image_display?dateFolderName=' + item.pro_up_folder + '&fileName=s_' + item.pro_img}">
+            </td>
+            <td th:text="${item['pro_name']}"></td>
+            <td th:text="${#numbers.formatInteger(item['pro_price'], 3, 'COMMA') + '원'}"></td>
+            <td>
+              <input type="number" name="btn_cart_amount" th:value="${item['cart_amount']}" style="width: 60px;">
+              <button type="button" class="btn btn-success" name="btn_quantity_change" th:data-pro_num="${item['pro_num']}" style="width:80px;">변경</button>             
+            </td>
+            <td th:text="${#numbers.formatInteger(item['unitprice'], 3, 'COMMA') + '원'}"></td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="6"  th:if="${cart_total_price !=null}" th:text="'총금액' + ${#numbers.formatInteger(cart_total_price, 3, 'COMMA') + '원'}"></td>
+          </tr>
+          <tr>
+            <td colspan="6"  th:unless= "${cart_total_price != null}" th:text="'장바구니가 비웠습니다.'"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </form>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-6">
+      <button type="button" class="btn btn-secondary" id="btn_sel_delete">선택삭제</button>
+      <button type="button" class="btn btn-danger" id="btn_cart_empty">장바구니비우기</button>
+    </div>
+    <div class="col-6">
+      <button type="button" class="btn btn-success" id="btn_order_info">주문하기</button>
+      <button type="button" class="btn btn-info" id="btn_shopping">쇼핑하기</button>
+    </div>
+  </div>
+</th:block>
+
+<th:block layout:fragment="script2">
+  <script th:inline="javascript">
+
+    $(document).ready(function() {
+
+      // 장바구니 비우기.  id="btn_cart_empty"
+      $("#btn_cart_empty").on("click", function() {
+        
+        if(!confirm("장바구니를 비우겠습니까?")) return;
+
+        location.href = "/cart/cart_empty";
+      });
+
+      let isCheck = false;
+
+      // checkbox 전체선택을 클릭 설정.  id="checkAll"
+      $("#checkAll").on("click", function() {
+        $("input[name='check']").prop("checked", this.checked);
+        isCheck = this.checked;
+      });
+
+      // checkbox 개별선택에 의한 전체선택 제어.
+      $("input[name='check']").on("click", function() {
+        $("#checkAll").prop("checked", this.checked); // 개별 checkobx가 선택유무에 따라, 전체선택 체크박스 상태변경.
+
+        $("input[name='check']").each(function() {
+          // 1개라도 checkbox가 선택되어 있지않으면, 전체선텍 체크박스를 체크 안된상태로 표시 하겠다.
+          if(!$(this).is(":checked")) {
+            $("#checkAll").prop("checked", false);
+          }
+        });
+      });
+
+      // 선택삭제 클릭 이벤트 설정.  id="btn_sel_delete"
+      $("#btn_sel_delete").on("click", function() {
+        if(!confirm("체크된 상품을 삭제하시겠습니까?")) return;
+
+        // 폼 전송. id="cartForm"
+        $("#cartForm").submit();
+
+      });
+
+      // 수량변경 이벤트 등록.  id="btn_quantity_change"  name="btn_cart_amount"
+      $("button[name='btn_quantity_change']").on("click", function() {
+        let pro_num = $(this).data("pro_num");
+        let cart_amount = $(this).parent().find("input[name='btn_cart_amount']").val();
+
+        console.log("상품코드", pro_num);
+        console.log("수량", cart_amount);
+
+        //1)ajax 이용
+
+
+        //2)location.href 구문을 이용.
+        location.href="/cart/cart_quantity_change?pro_num=" + pro_num + "&cart_amount=" + cart_amount;
+      });
+
+      // 주문하기 클릭이벤트 설정.  id="btn_order_info"
+      $("#btn_order_info").on("click", function() {
+        location.href = "/order/order_info?type=cart";
+      });
+
+    }); // ready end event
+
+  </script>
+
+</th:block>
+</html>
